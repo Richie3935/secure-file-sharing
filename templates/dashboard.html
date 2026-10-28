@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Secure File Sharing</title>
+</head>
+
+<body>
+
+    <h1>Welcome, {{ username }}!</h1>
+
+    <h2>Upload a File</h2>
+
+    <form action="/upload" method="POST" enctype="multipart/form-data">
+
+        <input type="file" name="file" required>
+
+        <button type="submit">Upload</button>
+
+    </form>
+
+    <hr>
+
+    <h2>My Files</h2>
+
+    {% if files %}
+
+        <ul>
+
+        {% for file in files %}
+
+            <li>
+                {{ file.filename }}
+                - Uploaded: {{ file.uploaded_at }}
+            </li>
+
+        {% endfor %}
+
+        </ul>
+
+    {% else %}
+
+        <p>You haven't uploaded any files yet.</p>
+
+    {% endif %}
+
+    <br>
+
+    <a href="/logout">Logout</a>
+
+</body>
+
+</html>
