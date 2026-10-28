@@ -36,6 +36,25 @@ def home():
 
     return redirect("/login")
 
+def log_activity(user_id, action, file_id=None, filename=None):
+
+    connection = get_db_connection()
+    cursor = connection.cursor()
+
+    query = """
+    INSERT INTO activity_logs (user_id, action, file_id, filename)
+    VALUES (%s, %s, %s, %s)
+    """
+
+    cursor.execute(
+        query,
+        (user_id, action, file_id, filename)
+    )
+
+    connection.commit()
+
+    cursor.close()
+    connection.close()
 
 # -------------------------
 # REGISTER
@@ -111,6 +130,8 @@ def login():
 
                 session["user_id"] = user["id"]
                 session["username"] = user["username"]
+
+                log_activity(user["id"], "LOGIN")
 
                 return redirect("/dashboard")
 
@@ -207,8 +228,17 @@ def upload_file():
 
     connection.commit()
 
+    file_id = cursor.lastrowid
+
     cursor.close()
     connection.close()
+
+    log_activity(
+        session["user_id"],
+        "UPLOAD",
+        file_id,
+        filename
+    )
 
     return redirect("/dashboard")
 
@@ -233,7 +263,6 @@ def check_access(file_id):
     """
 
     cursor.execute(query, (file_id,))
-
     file = cursor.fetchone()
 
     cursor.close()
@@ -245,10 +274,26 @@ def check_access(file_id):
 
     # Check ownership
     if file["owner_id"] != session["user_id"]:
+
+        log_activity(
+            session["user_id"],
+            "ACCESS_DENIED",
+            file["id"],
+            file["filename"]
+        )
+
         return "Access denied. You are not authorized to access this file."
 
-    return f"Access granted. You own the file: {file['filename']}"
+    # Owner has access
+    log_activity(
+        session["user_id"],
+        "ACCESS_GRANTED",
+        file["id"],
+        file["filename"]
+    )
 
+    return f"Access granted. You own the file: {file['filename']}"
+    
 # -------------------------
 # DOWNLOAD
 # -------------------------
@@ -289,6 +334,14 @@ def download_file(file_id):
     # Decrypt the file
     decrypted_data = decrypt_file(encrypted_data)
 
+    # Log successful download
+    log_activity(
+        session["user_id"],
+        "DOWNLOAD",
+        file["id"],
+        file["filename"]
+    )
+
     # Send the original file to the user
     return send_file(
         BytesIO(decrypted_data),
@@ -302,6 +355,11 @@ def download_file(file_id):
 
 @app.route("/logout")
 def logout():
+
+    log_activity(
+        session["user_id"],
+        "LOGOUT"
+    )
 
     session.clear()
 
