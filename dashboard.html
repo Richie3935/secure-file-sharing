@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Workspace · Secure File Sharing{% endblock %}
+{% block body %}
+<div class="workspace-page">
+  <div class="workspace-bg"></div>
+  <header class="workspace-top">
+    <a class="logo dark-logo" href="{{ url_for('dashboard') }}"><span class="logo-mark">S</span><span>Secure File Sharing</span></a>
+    <div class="workspace-user"><span class="avatar">{{ username[:1]|upper }}</span><span>{{ username }}</span><a href="{{ url_for('logout') }}">Sign out</a></div>
+  </header>
+
+  <main class="workspace-main">
+    <section class="hero-glass">
+      <div>
+        <span class="eyebrow">SECURE WORKSPACE</span>
+        <h1>Your files,<br><em>kept private.</em></h1>
+        <p>Encrypted storage with owner-controlled access and file integrity verification.</p>
+      </div>
+      <div class="hero-orbit"><div class="orbit-core">S</div><span class="orbit-label one">SHA-256</span><span class="orbit-label two">FERNET</span><span class="orbit-label three">MINIO</span></div>
+    </section>
+
+    <section class="workspace-grid">
+      <div class="glass-panel files-panel">
+        <div class="panel-title"><div><span class="eyebrow">MY FILES</span><h2>Stored documents</h2></div><span class="file-count">{{ files|length }}</span></div>
+        {% if files %}
+        <div class="files-list">
+          {% for file in files %}
+          <div class="file-card">
+            <div class="file-symbol">{{ file.filename.rsplit('.',1)[-1][:4]|upper if '.' in file.filename else 'FILE' }}</div>
+            <div class="file-info"><strong>{{ file.filename }}</strong><span>Encrypted · integrity verified</span></div>
+            <div class="file-actions"><a href="{{ url_for('check_access', file_id=file.id) }}">Access</a><a class="download" href="{{ url_for('download_file', file_id=file.id) }}">Download</a></div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state"><div class="empty-cloud">↑</div><h3>Your workspace is empty</h3><p>Upload your first document to begin.</p></div>
+        {% endif %}
+      </div>
+
+      <div class="glass-panel upload-card" id="upload">
+        <div class="panel-title"><div><span class="eyebrow">SECURE UPLOAD</span><h2>Add a document</h2></div></div>
+        <form action="{{ url_for('upload_file') }}" method="POST" enctype="multipart/form-data" id="uploadForm">
+          <label class="upload-zone" id="dropzone">
+            <input type="file" name="file" id="fileInput" required>
+            <div class="upload-ring">↑</div>
+            <strong id="fileTitle">Drop a file here</strong>
+            <span id="fileSubtitle">or browse from your computer</span>
+          </label>
+          <div class="flow"><div><b>01</b><span>Hash</span></div><i></i><div><b>02</b><span>Encrypt</span></div><i></i><div><b>03</b><span>Store</span></div></div>
+          <button class="creative-btn" id="uploadButton" type="submit"><span>Upload securely</span><span>↑</span></button>
+        </form>
+      </div>
+    </section>
+  </main>
+</div>
+{% endblock %}
