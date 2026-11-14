@@ -1,112 +1,194 @@
-# Secure Cloud File Sharing System Using Python
+# Secure Cloud File Sharing System
 
-A secure cloud file-sharing system built using **Python, Flask, MySQL, Cryptography, and MinIO**.
+A Python-based secure cloud file-sharing web application built using Flask, MySQL, MinIO, and cryptographic techniques.
 
-The project focuses on authentication, file upload, hashing, encryption, cloud/object storage, access control, secure downloading, and activity logging.
+The application provides user authentication, encrypted file storage, integrity verification, owner-based access control, secure downloads, and activity logging.
 
-## Project Modules
+## Features
 
-1. **Authentication** — User registration/login, password hashing, Flask sessions.
-2. **File Upload** — Logged-in users can upload files; metadata is stored in MySQL.
-3. **File Hashing** — SHA-256 hash is generated and stored for file integrity.
-4. **File Encryption** — Files are encrypted with Fernet before storage.
-5. **Cloud Storage** — MinIO is used as local S3-compatible object storage.
-6. **Access Control** — Only the file owner can access/download the file.
-7. **Download** — Encrypted files are retrieved, decrypted, and sent to the user.
-8. **Activity Logging** — LOGIN, LOGOUT, UPLOAD, DOWNLOAD, ACCESS_GRANTED and ACCESS_DENIED actions are logged.
+### 1. User Authentication
+- User registration and login.
+- Password hashing using Werkzeug.
+- Session-based authentication using Flask.
 
-## Technologies
+### 2. Secure File Upload
+- Authenticated users can upload files.
+- File metadata is stored in MySQL.
+- Uploaded files are encrypted before being stored.
 
-- Python
-- Flask
-- MySQL
-- MinIO
-- `cryptography`
-- `mysql-connector-python`
-- Werkzeug
-- HTML/CSS/Jinja templates
+### 3. File Integrity Verification
+- SHA-256 hashing is used to generate file hashes.
+- Hash values are stored in MySQL alongside file metadata.
+
+### 4. File Encryption
+- Fernet symmetric encryption using the Python Cryptography library.
+- Files are encrypted before cloud storage.
+- Files are decrypted when downloaded.
+
+### 5. Cloud/Object Storage
+- MinIO provides S3-compatible object storage.
+- Encrypted files are stored in a dedicated bucket.
+
+### 6. Access Control
+- Owner-based file authorization.
+- Users can access and download only their own files.
+- Unauthorized access attempts are logged.
+
+### 7. Secure File Download
+- Encrypted files are retrieved from MinIO.
+- Files are decrypted before being sent to the user.
+
+### 8. Activity Logging
+- Records important user activities, including:
+  - LOGIN
+  - LOGOUT
+  - UPLOAD
+  - DOWNLOAD
+  - ACCESS_GRANTED
+  - ACCESS_DENIED
+
+## Technology Stack
+
+| Technology | Purpose |
+|---|---|
+| Python | Backend programming |
+| Flask | Web application framework |
+| MySQL | User, file metadata and activity storage |
+| MinIO | Object storage |
+| Fernet / Cryptography | File encryption |
+| SHA-256 | File hashing |
+| Werkzeug | Password hashing |
+| HTML, CSS, JavaScript | Frontend |
+| Jinja2 | Flask templates |
 
 ## Project Structure
 
 ```text
-secure_file_sharing/
+secure-file-sharing/
+│
 ├── app.py
 ├── database.py
 ├── encryption.py
 ├── minio_storage.py
-├── secret.key
+│
+├── static/
+│   ├── app.js
+│   ├── style.css
+│   └── auth-bg.png
+│
+├── templates/
+│   ├── base.html
+│   ├── login.html
+│   ├── register.html
+│   └── dashboard.html
+│
+├── test_encryption.py
+├── test_minio.py
 ├── requirements.txt
-├── README.md
-├── uploads/
-└── templates/
-    ├── register.html
-    ├── login.html
-    └── dashboard.html
+├── .gitignore
+└── README.md
 ```
 
-> `secret.key` is intentionally not included in GitHub. Never upload it.
+Local runtime files such as `secret.key`, uploaded files, and virtual environments are not included in the repository.
 
-## How It Works
+## System Architecture
 
-### Upload Flow
+### File Upload Flow
 
 ```text
-User → Flask → Authentication Check → SHA-256 Hash
-     → Encrypt File → MinIO → Store Metadata in MySQL → Activity Log
+User
+  ↓
+Flask Application
+  ↓
+Authentication Check
+  ↓
+SHA-256 Hash Generation
+  ↓
+File Encryption
+  ↓
+MinIO Object Storage
+  ↓
+MySQL Metadata Storage
+  ↓
+Activity Logging
 ```
 
-### Download Flow
+### File Download Flow
 
 ```text
-User → Flask → Authentication Check → Ownership Check
-     → MinIO → Decrypt → Browser Download → Activity Log
+User
+  ↓
+Authentication Check
+  ↓
+Ownership Verification
+  ↓
+Retrieve Encrypted File from MinIO
+  ↓
+File Decryption
+  ↓
+Browser Download
+  ↓
+Activity Logging
 ```
 
-## Local Setup
-
-Each developer needs their own local Python, MySQL, and MinIO setup.
+## Installation and Setup
 
 ### 1. Clone the Repository
 
-```cmd
+```bash
 git clone https://github.com/Richie3935/secure-file-sharing.git
 cd secure-file-sharing
 ```
 
 ### 2. Create a Virtual Environment
 
-```cmd
+```bash
 python -m venv venv
+```
+
+For Windows:
+
+```cmd
 venv\Scripts\activate
 ```
 
 ### 3. Install Dependencies
 
-```cmd
+If `requirements.txt` is available:
+
+```bash
 pip install -r requirements.txt
 ```
 
-If `requirements.txt` is not available yet:
+Otherwise:
 
-```cmd
+```bash
 pip install flask mysql-connector-python werkzeug cryptography minio
 ```
 
-## MySQL Setup
+### 4. Configure MySQL
 
-Create the database and tables:
+Create the database:
 
 ```sql
 CREATE DATABASE secure_file_sharing;
 USE secure_file_sharing;
+```
 
+Create the users table:
+
+```sql
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(100) NOT NULL,
     email VARCHAR(150) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL
 );
+```
 
+Create the files table:
+
+```sql
 CREATE TABLE files (
     id INT AUTO_INCREMENT PRIMARY KEY,
     filename VARCHAR(255) NOT NULL,
@@ -115,7 +197,11 @@ CREATE TABLE files (
     file_hash VARCHAR(64),
     FOREIGN KEY (owner_id) REFERENCES users(id)
 );
+```
 
+Create the activity logs table:
+
+```sql
 CREATE TABLE activity_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT,
@@ -127,39 +213,26 @@ CREATE TABLE activity_logs (
 );
 ```
 
-Open `database.py` and set your **local** MySQL password:
+Configure your local MySQL connection in `database.py`. Never commit real database credentials.
 
-```python
-connection = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="YOUR_MYSQL_PASSWORD",
-    database="secure_file_sharing"
-)
-```
+### 5. Configure MinIO
 
-**Never commit your real MySQL password to GitHub.**
+Start the MinIO server.
 
-## MinIO Setup
-
-The project uses MinIO as local S3-compatible object storage.
-
-For the current Windows setup:
+Example Windows command:
 
 ```cmd
 cd C:\minio
 minio.exe server C:\minio\data --license C:\minio\minio.license --console-address ":9001"
 ```
 
-Keep this CMD window running.
-
-Open the MinIO console:
+MinIO Console:
 
 ```text
 http://localhost:9001
 ```
 
-The MinIO API is:
+MinIO API:
 
 ```text
 http://localhost:9000
@@ -171,169 +244,77 @@ Create a bucket named:
 secure-files
 ```
 
-The application stores **encrypted** file objects in this bucket.
+The application stores encrypted file objects in this bucket.
 
-> For production, MinIO credentials should be stored in environment variables rather than hardcoded.
+Use environment variables and secure credentials instead of default credentials for deployments.
 
-## Encryption Key
+### 6. Run the Application
 
-`encryption.py` creates `secret.key` when needed.
+Ensure MySQL and MinIO are running.
 
-Important:
+Start Flask:
 
-- Do not delete `secret.key` if you need to decrypt existing encrypted files.
-- Do not upload `secret.key` to GitHub.
-- A different encryption key cannot decrypt files encrypted with the original key.
-
-## Run the Application
-
-Start MinIO first and keep it running:
-
-```cmd
-cd C:\minio
-minio.exe server C:\minio\data --license C:\minio\minio.license --console-address ":9001"
-```
-
-Open another CMD window, go to the project folder, activate the virtual environment, and run:
-
-```cmd
+```bash
 python app.py
 ```
 
-Open:
+Open the application:
 
 ```text
 http://127.0.0.1:5000
 ```
 
-## Basic Testing
+## Testing
 
-### Authentication
+The following functionality can be tested through the application:
 
-1. Register a user.
-2. Login.
-3. Confirm the dashboard opens.
+| Test | Expected Result |
+|---|---|
+| User registration | New user account is created |
+| User login | Authenticated dashboard opens |
+| File upload | File is encrypted and stored in MinIO |
+| File hashing | SHA-256 hash is stored in MySQL |
+| Access control | Only the owner can access the file |
+| File download | Original file is decrypted and downloaded |
+| Activity logging | User actions are recorded in MySQL |
 
-### Upload
-
-1. Login.
-2. Upload a file.
-3. Confirm it appears on the dashboard.
-4. Confirm an encrypted object appears in the `secure-files` MinIO bucket.
-
-### Hashing
-
-Run:
+### Verify Stored File Metadata
 
 ```sql
-SELECT id, filename, owner_id, file_hash FROM files;
+SELECT id, filename, owner_id, file_hash
+FROM files;
 ```
 
-A SHA-256 hash should be stored for uploaded files.
-
-### Access Control
-
-Run:
+### Verify Activity Logs
 
 ```sql
-SELECT id, filename, owner_id FROM files;
-```
-
-The owner should receive **Access granted**.
-
-A different logged-in user should receive **Access denied**.
-
-### Download
-
-The owner can download the file. The application retrieves the encrypted object from MinIO, decrypts it, and sends the original file to the browser.
-
-### Activity Logging
-
-Run:
-
-```sql
-SELECT * FROM activity_logs
+SELECT *
+FROM activity_logs
 ORDER BY activity_time DESC;
 ```
 
-You should see actions such as:
+## Security Considerations
 
-```text
-LOGIN
-UPLOAD
-ACCESS_GRANTED
-ACCESS_DENIED
-DOWNLOAD
-LOGOUT
-```
+- Never commit `secret.key` to GitHub.
+- Never expose real MySQL or MinIO credentials.
+- Keep sensitive configuration files in `.gitignore`.
+- Preserve the original encryption key to retain access to existing encrypted files.
+- Use strong, unique credentials and secure session configuration.
+- Review the implementation and security controls before production deployment.
 
-## Frontend Development
+## Project Status
 
-The current frontend uses Flask/Jinja templates in:
+All eight core modules have been implemented:
 
-```text
-templates/
-├── register.html
-├── login.html
-└── dashboard.html
-```
+- [x] Authentication
+- [x] File Upload
+- [x] File Hashing
+- [x] File Encryption
+- [x] MinIO Cloud Storage
+- [x] Access Control
+- [x] Secure Download
+- [x] Activity Logging
 
-A frontend developer can mainly work in the `templates/` folder and add CSS/JavaScript as needed.
+---
 
-The backend Flask routes are in `app.py`. Coordinate before changing route names so existing forms and links continue to work.
-
-## Git Workflow
-
-Before starting work:
-
-```cmd
-git pull
-```
-
-After making changes:
-
-```cmd
-git status
-git add .
-git commit -m "Describe your changes"
-git push
-```
-
-If the remote has newer changes:
-
-```cmd
-git pull
-```
-
-Resolve conflicts if Git reports any, then commit and push.
-
-## Security Notes
-
-Do not commit:
-
-- `secret.key`
-- Real MySQL passwords
-- Production MinIO credentials
-- API keys or other private secrets
-
-Keep sensitive/local files in `.gitignore`.
-
-## Current Status
-
-| Module | Status |
-|---|---|
-| Authentication | Complete |
-| File Upload | Complete |
-| File Hashing | Complete |
-| File Encryption | Complete |
-| Cloud Storage (MinIO) | Complete |
-| Access Control | Complete |
-| Download | Complete |
-| Activity Logging | Complete |
-
-## Project Team
-
-- Himanshu Gidwani
-- Pranjal Tanwar
-- Abhishek Kumar
-- Rachell Gupta
+**Repository:** [Secure Cloud File Sharing System](https://github.com/Richie3935/secure-file-sharing)
