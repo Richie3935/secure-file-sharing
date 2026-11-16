@@ -4,6 +4,7 @@ from werkzeug.utils import secure_filename
 import os
 import hashlib
 from encryption import encrypt_file, decrypt_file
+from cryptography.fernet import InvalidToken
 from minio_storage import upload_to_minio, download_from_minio
 from io import BytesIO
 
@@ -332,7 +333,16 @@ def download_file(file_id):
     encrypted_data = download_from_minio(file["filename"])
 
     # Decrypt the file
-    decrypted_data = decrypt_file(encrypted_data)
+    try:
+        decrypted_data = decrypt_file(encrypted_data)
+    except InvalidToken:
+        return "File decryption failed. The stored file may have been modified or corrupted."
+
+    # Verify file integrity
+    downloaded_hash = hashlib.sha256(decrypted_data).hexdigest()
+
+    if downloaded_hash != file["file_hash"]:
+        return "File integrity verification failed!"
 
     # Log successful download
     log_activity(

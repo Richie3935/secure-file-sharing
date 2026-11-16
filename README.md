@@ -17,8 +17,11 @@ The application provides user authentication, encrypted file storage, integrity 
 - Uploaded files are encrypted before being stored.
 
 ### 3. File Integrity Verification
-- SHA-256 hashing is used to generate file hashes.
-- Hash values are stored in MySQL alongside file metadata.
+- SHA-256 hashing is used to generate a hash of the original file during upload.
+- The original hash is stored in MySQL alongside file metadata.
+- During download, the decrypted file is hashed again using SHA-256.
+- The newly calculated hash is compared with the original hash stored in MySQL.
+- If the hashes do not match, the application reports a file integrity verification failure.
 
 ### 4. File Encryption
 - Fernet symmetric encryption using the Python Cryptography library.
@@ -125,6 +128,12 @@ Ownership Verification
 Retrieve Encrypted File from MinIO
   ↓
 File Decryption
+  ↓
+SHA-256 Hash Calculation
+  ↓
+Hash Comparison with MySQL
+  ↓
+Integrity Verification
   ↓
 Browser Download
   ↓
